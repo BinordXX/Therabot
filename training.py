@@ -1,34 +1,30 @@
-import joblib
 import pandas as pd
+import joblib
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import classification_report, accuracy_score
-from sklearn.preprocessing import LabelEncoder
+from imblearn.over_sampling import RandomOverSampler
 
-# Load vectorized data
-X_train_tfidf = joblib.load("X_train_tfidf.pkl")
-X_test_tfidf = joblib.load("X_test_tfidf.pkl")
+# === Load the vectorized training data ===
+X_train = joblib.load("X_train_tfidf.pkl")  # Corrected filename
+y_train = pd.read_csv("y_train.csv").squeeze()  # Ensure it's a Series
 
-# Load raw string labels
-y_train = pd.read_csv("y_train.csv")["label"]
-y_test = pd.read_csv("y_test.csv")["label"]
+# === Oversample minority classes ===
+ros = RandomOverSampler(random_state=42)
+X_resampled, y_resampled = ros.fit_resample(X_train, y_train)
 
-# Fit encoder on STRING labels
-label_encoder = LabelEncoder()
-label_encoder.fit(y_train.tolist() + y_test.tolist())  # Fit on full label set
-y_train_encoded = label_encoder.transform(y_train)
-y_test_encoded = label_encoder.transform(y_test)
+print("✅ Oversampling complete. New class distribution:")
+print(pd.Series(y_resampled).value_counts())
 
-# Train model
+# === Train the Logistic Regression model ===
 model = LogisticRegression(max_iter=1000)
-model.fit(X_train_tfidf, y_train_encoded)
+model.fit(X_resampled, y_resampled)
 
-# Predict
-y_pred = model.predict(X_test_tfidf)
+# === Save the trained model ===
+joblib.dump(model, "emotion_model.pkl")
 
-# Evaluation
-accuracy = accuracy_score(y_test_encoded, y_pred)
-print("🎯 Accuracy Score:", accuracy)
+# === Optional: Evaluate on training data ===
+y_train_pred = model.predict(X_resampled)
+print("\n📈 Training Accuracy:", accuracy_score(y_resampled, y_train_pred))
+print("\n📋 Classification Report:\n", classification_report(y_resampled, y_train_pred))
 
-# Classification report with correct string labels
-target_names = label_encoder.classes_.astype(str)  # ensure they are strings
-print("\n📝 Classification Report:\n", classification_report(y_test_encoded, y_pred, target_names=target_names))
+print("✅ Model training complete. Saved as emotion_model.pkl")
