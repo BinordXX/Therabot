@@ -27,7 +27,7 @@ y_pred = model.predict(X_test_tfidf)
 
 # Evaluation
 accuracy = accuracy_score(y_test_encoded, y_pred)
-print("🎯 Accuracy:", accuracy)
+print("🎯 Accuracy Score:", accuracy)
 
 # Classification report with correct string labels
 target_names = label_encoder.classes_.astype(str)  # ensure they are strings
